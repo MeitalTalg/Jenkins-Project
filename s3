@@ -1,0 +1,30 @@
+pipeline {
+    agent any
+    stages {
+        stage('Build') {
+            steps {
+                echo 'build'
+                sh 'sudo dnf install tidy -y'
+                sh 'tidy html/index.html'
+                sh 'docker run --name some-nginx -v ./html:/usr/share/nginx/html:ro -p 80:80 -d nginx'
+            }
+        }
+        stage('test'){
+            steps {
+                echo 'test'
+                sh 'curl 127.0.0.1:80'
+            }
+        }
+        stage('upload'){
+            steps {
+                sh 'aws s3 cp html/index.html s3://jenkinstudy'
+            }
+        }
+    }
+    post { 
+        always { 
+            sh ' echo " removing docker " '
+           sh ' docker rm -f some-nginx '
+        }
+    }
+}
